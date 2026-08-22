@@ -23,6 +23,11 @@ repos:
     rev: v1.10.0
     hooks:
       - id: mypy
+        args: [--explicit-package-bases]
+        exclude: ^alembic/
         additional_dependencies:
           - pydantic
           - fastapi
+          - pydantic
+          - python-dotenv
+          - sqlalchemy[mypy]
