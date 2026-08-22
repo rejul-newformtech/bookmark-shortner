@@ -1,10 +1,14 @@
 from fastapi import FastAPI
 
+from src.routes.auth import router as auth_router
+
 app = FastAPI(
     title="Link Shortener API",
     version="1.0.0",
     description="This is a simple API for shortening URLs.",
 )
+
+app.include_router(auth_router)
 
 
 @app.get("/", tags=["Health Check"])
