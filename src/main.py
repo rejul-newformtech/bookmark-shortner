@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from src.routes.auth import router as auth_router
+from src.routes.bookmarks import router as bookmarks_router
 
 app = FastAPI(
     title="Link Shortener API",
@@ -9,6 +10,7 @@ app = FastAPI(
 )
 
 app.include_router(auth_router)
+app.include_router(bookmarks_router)
 
 
 @app.get("/", tags=["Health Check"])

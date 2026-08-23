@@ -1,5 +1,7 @@
-from pydantic import BaseModel, HttpUrl
 from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel, HttpUrl
 
 
 class BookmarkBase(BaseModel):
@@ -11,11 +13,11 @@ class BookmarkCreate(BookmarkBase):
 
 
 class BookmarkResponse(BookmarkBase):
-    id: str
+    id: UUID
     short_code: str
     visit_count: int
     created_at: datetime
-    user_id: str
+    user_id: UUID
 
     class Config:
         from_attributes = True

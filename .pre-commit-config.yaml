@@ -33,4 +33,5 @@ repos:
           - python-dotenv
           - passlib
           - types-passlib
+          - types-python-jose
           - sqlalchemy[mypy]

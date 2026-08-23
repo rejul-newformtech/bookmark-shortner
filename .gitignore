@@ -1,2 +1,8 @@
 _pycache_
 .venv/
+uv.lock
+src/routes/__pycache__/
+src/service/__pycache__/
+src/utils/__pycache__/
+src/models/__pycache__/
+.env
