@@ -13,11 +13,11 @@ app.include_router(auth_router)
 app.include_router(bookmarks_router)
 
 
-@app.get("/", tags=["Health Check"])
-async def health_check():
-    return {"status": "healthy"}
+# @app.get("/", tags=["Health Check"])
+# async def health_check():
+#     return {"status": "healthy"}
 
 
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: str | None = None):
-    return {"item_id": item_id, "q": q}
+# @app.get("/items/{item_id}")
+# def read_item(item_id: int, q: str | None = None):
+#     return {"item_id": item_id, "q": q}
