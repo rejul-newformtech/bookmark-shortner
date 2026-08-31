@@ -4,8 +4,11 @@ from fastapi import APIRouter, Depends, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
+from app.core.logger import get_logger
 from app.crud.user import user_service
-from app.schemas.user import Token, UserCreate
+from app.schemas.user import Token, UserCreate, UserResponse
+
+logger = get_logger(__name__)
 
 router = APIRouter(
     prefix="/auth",
@@ -13,7 +16,9 @@ router = APIRouter(
 )
 
 
-async def login_form(username: Annotated[str, Form], password: Annotated[str, Form]):
+async def login_form(
+    username: Annotated[str, Form()], password: Annotated[str, Form()]
+):
     """Parse the username and password submitted through the login form."""
     return {"username": username, "password": password}
 
@@ -21,10 +26,12 @@ async def login_form(username: Annotated[str, Form], password: Annotated[str, Fo
 @router.post("/register")
 async def register_user(user: UserCreate, db: Annotated[AsyncSession, Depends(get_db)]):
     """Register a new user."""
+    logger.info("Register attempt for username=%s", user.username)
     result = await user_service.create_user(db, user)
+    logger.info("User registered successfully: %s", result.username)
     return {
         "message": "User registered successfully",
-        "user": result,
+        "user": UserResponse.model_validate(result),
     }
 
 
@@ -34,7 +41,8 @@ async def login_for_access_token(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Authenticate a user and return an access token."""
-    token = await user_service.login_user(
-        db, form_data["username"], form_data["password"]
-    )
+    username = form_data["username"]
+    logger.info("Login attempt for username=%s", username)
+    token = await user_service.login_user(db, username, form_data["password"])
+    logger.info("Successful login for username=%s", username)
     return token

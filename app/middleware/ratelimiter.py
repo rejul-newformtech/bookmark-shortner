@@ -1,4 +1,5 @@
 import time
+from collections import defaultdict
 
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -10,15 +11,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.max_requests = max_requests
         self.window = window
-        self.requests: dict[str, list[float]] = {}
+        self.requests: defaultdict[str, list[float]] = defaultdict(list)
 
     async def dispatch(self, request: Request, call_next):
         client = request.client
-        client_ip = client.host if client is not None else "unknown"
+        client_ip = client.host if client is not None else "127.0.0.1"
         current_time = time.time()
-
-        if client_ip not in self.requests:
-            self.requests[client_ip] = []
 
         # Remove requests outside the time window
         self.requests[client_ip] = [

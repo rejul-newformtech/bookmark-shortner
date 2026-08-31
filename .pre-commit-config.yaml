@@ -36,3 +36,6 @@ repos:
           - types-python-jose
           - sqlalchemy[mypy]
           - pydantic-settings
+          - pytest
+          - pytest-asyncio
+          - httpx

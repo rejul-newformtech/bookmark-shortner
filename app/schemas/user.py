@@ -52,7 +52,7 @@ class UserLogin(BaseModel):
 
 
 class UserResponse(UserBase):
-    id: str
+    id: UUID
     status: UserStatus
 
     class Config:

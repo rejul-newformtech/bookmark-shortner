@@ -4,8 +4,11 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+from app.core.logger import get_logger
 from app.crud.base import CRUDBase
 from app.models.bookmarks import Bookmark
+
+logger = get_logger(__name__)
 
 
 class BookmarkService(CRUDBase[Bookmark]):
@@ -21,6 +24,7 @@ class BookmarkService(CRUDBase[Bookmark]):
             )
         )
         if existing_bookmark:
+            logger.warning("Bookmark Already exist")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="URL already used",

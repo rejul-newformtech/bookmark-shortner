@@ -3,3 +3,7 @@ __pycache__/
 uv.lock
 .env
 alembic/versions/**
+*.log
+.pytest_cache/
+.coverage
+htmlcov/
