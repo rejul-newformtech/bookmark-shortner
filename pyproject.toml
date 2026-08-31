@@ -4,10 +4,13 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.14"
 dependencies = [
+    "alembic>=1.19.1",
     "asyncpg>=0.31.0",
     "bcrypt<5",
     "fastapi[standard]>=0.141.1",
     "passlib>=1.7.4",
+    "psycopg[binary]>=3.2.0",
+    "pydantic-settings>=2.15.0",
     "python-jose[cryptography]>=3.5.0",
     "sqlalchemy>=2.0.52",
     "types-passlib>=1.7.7.20260211",
@@ -15,14 +18,14 @@ dependencies = [
 ]
 
 [project.scripts]
-newform = "newform:main"
+newform = "app.main:app"
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
-module-name = "src"
+module-name = "app"
 module-root = "."
 
 [dependency-groups]
