@@ -8,3 +8,5 @@ logs/
 .pytest_cache/
 .coverage
 htmlcov/
+
+app/api/v1/routes/__pycache__/bookmarks.cpython-314.pyc

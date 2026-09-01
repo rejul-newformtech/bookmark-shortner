@@ -51,6 +51,11 @@ async def get_bookmark_by_short_code(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
+    """
+    This endpoint is used to retrieve a bookmark by its short code.
+    It also records a visit to the bookmark in the database and increments
+    the visit count.
+    """
     result = await bookmark_service.get_bookmark_by_short_code(
         db=db, short_code=short_code, user_id=current_user.id
     )
@@ -59,5 +64,6 @@ async def get_bookmark_by_short_code(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Bookmark not found",
         )
+    # Added Background task for recodring visit and analytics
     background_tasks.add_task(record_visit_background, bookmark_id=result.id)
     return result
