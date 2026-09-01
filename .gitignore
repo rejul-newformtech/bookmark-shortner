@@ -1,12 +1,20 @@
-__pycache__/
-.venv/
+
+
 uv.lock
 .env
 alembic/versions/**
 *.log
-logs/
 .pytest_cache/
 .coverage
 htmlcov/
 
-app/api/v1/routes/__pycache__/bookmarks.cpython-314.pyc
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
