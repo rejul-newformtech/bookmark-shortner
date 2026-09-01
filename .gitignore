@@ -4,6 +4,7 @@ uv.lock
 .env
 alembic/versions/**
 *.log
+logs/
 .pytest_cache/
 .coverage
 htmlcov/

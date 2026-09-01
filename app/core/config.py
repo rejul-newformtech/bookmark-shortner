@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     DB_HOST: str = "localhost"
     DB_NAME: str = ""
     DB_PORT: int = 5432
+    LOG_FORMAT: str = "text"  # "text", "json", or "both"
+    LOG_DIR: str = "logs"
 
     model_config = SettingsConfigDict(
         env_file=".env",
