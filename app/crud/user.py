@@ -22,19 +22,19 @@ class UserService(CRUDBase[User]):
     async def get_user_profile_by_username(
         self,
         db: AsyncSession,
-        user: User,
+        username: str,
     ) -> User:
-        logger.info("Fetching user profile for username=%s", user.username)
+        logger.info("Fetching user profile for username=%s", username)
         result = await db.execute(
             select(User)
             .options(selectinload(User.bookmarks).selectinload(Bookmark.visits))
-            .where(User.username == user.username)
+            .where(User.username == username)
         )
 
         db_user = result.unique().scalar_one_or_none()
 
         if db_user is None:
-            logger.warning("User profile not found for username=%s", user.username)
+            logger.warning("User profile not found for username=%s", username)
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found",

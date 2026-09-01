@@ -103,6 +103,35 @@ class TestGetBookmarks:
             assert "short_code" in bookmark
 
     @pytest.mark.asyncio
+    async def test_get_bookmarks_pagination_and_search(
+        self, client_with_auth: AsyncClient
+    ):
+        """Test pagination parameters (skip, limit) and search filter on GET /bookmarks/."""
+        urls = [
+            "https://python.org",
+            "https://fastapi.tiangolo.com",
+            "https://github.com",
+        ]
+        for url in urls:
+            await client_with_auth.post("/bookmarks/", json={"original_url": url})
+
+        # Test limit
+        resp_limit = await client_with_auth.get("/bookmarks/?skip=0&limit=2")
+        assert resp_limit.status_code == 200
+        assert len(resp_limit.json()) == 2
+
+        # Test skip
+        resp_skip = await client_with_auth.get("/bookmarks/?skip=2&limit=2")
+        assert resp_skip.status_code == 200
+        assert len(resp_skip.json()) == 1
+
+        # Test search
+        resp_search = await client_with_auth.get("/bookmarks/?search=fastapi")
+        assert resp_search.status_code == 200
+        assert len(resp_search.json()) == 1
+        assert "fastapi" in resp_search.json()[0]["original_url"]
+
+    @pytest.mark.asyncio
     async def test_get_all_bookmarks_without_auth(self, client: AsyncClient):
         """Test getting bookmarks without authentication."""
         response = await client.get("/bookmarks/")

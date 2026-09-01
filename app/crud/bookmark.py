@@ -37,9 +37,23 @@ class BookmarkService(CRUDBase[Bookmark]):
             user_id=user_id,
         )
 
-    async def get_bookmarks(self, db: AsyncSession, user_id: UUID):
-        # all bookmarks for a user
-        result = await db.execute(select(Bookmark).where(Bookmark.user_id == user_id))
+    async def get_bookmarks(
+        self,
+        db: AsyncSession,
+        user_id: UUID,
+        skip: int = 0,
+        limit: int = 10,
+        search: str | None = None,
+    ):
+        # all bookmarks for a user with optional search and pagination
+        query = select(Bookmark).where(Bookmark.user_id == user_id)
+        if search:
+            query = query.where(
+                (Bookmark.original_url.ilike(f"%{search}%"))
+                | (Bookmark.short_code.ilike(f"%{search}%"))
+            )
+        query = query.offset(skip).limit(limit)
+        result = await db.execute(query)
         return result.scalars().all()
 
     async def get_bookmark_by_short_code(

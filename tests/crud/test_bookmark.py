@@ -54,6 +54,43 @@ class TestBookmarkCRUD:
         assert all(b.user_id == user_id for b in bookmarks)
 
     @pytest.mark.asyncio
+    async def test_get_bookmarks_pagination_and_search(self, db_session):
+        """Test getting bookmarks with pagination and search filtering."""
+        user_id = uuid4()
+
+        await bookmark_service.db_bookmark(
+            db=db_session, user_id=user_id, url="https://python.org", short_code="py123"
+        )
+        await bookmark_service.db_bookmark(
+            db=db_session,
+            user_id=user_id,
+            url="https://fastapi.tiangolo.com",
+            short_code="fa456",
+        )
+        await bookmark_service.db_bookmark(
+            db=db_session, user_id=user_id, url="https://github.com", short_code="gh789"
+        )
+
+        # Test limit
+        page1 = await bookmark_service.get_bookmarks(
+            db=db_session, user_id=user_id, skip=0, limit=2
+        )
+        assert len(page1) == 2
+
+        # Test skip
+        page2 = await bookmark_service.get_bookmarks(
+            db=db_session, user_id=user_id, skip=2, limit=2
+        )
+        assert len(page2) == 1
+
+        # Test search filter
+        search_res = await bookmark_service.get_bookmarks(
+            db=db_session, user_id=user_id, search="fastapi"
+        )
+        assert len(search_res) == 1
+        assert "fastapi" in search_res[0].original_url
+
+    @pytest.mark.asyncio
     async def test_get_empty_bookmarks_for_user(self, db_session):
         """Test getting bookmarks for user with no bookmarks."""
         user_id = uuid4()

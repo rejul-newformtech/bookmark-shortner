@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
@@ -39,8 +39,17 @@ async def create_bookmark(
 async def get_bookmarks(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    skip: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 10,
+    search: Annotated[str | None, Query()] = None,
 ):
-    result = await bookmark_service.get_bookmarks(db=db, user_id=current_user.id)
+    result = await bookmark_service.get_bookmarks(
+        db=db,
+        user_id=current_user.id,
+        skip=skip,
+        limit=limit,
+        search=search,
+    )
     return result
 
 
