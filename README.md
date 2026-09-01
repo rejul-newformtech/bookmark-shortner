@@ -89,7 +89,6 @@ make docker-down
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/users/profile` | Get current authenticated user profile |
-| `GET` | `/users/{username}/profile` | Get user profile by username |
 
 ### Bookmarks (`/bookmarks`)
 | Method | Endpoint | Description |
