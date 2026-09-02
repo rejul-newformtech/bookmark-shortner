@@ -52,7 +52,11 @@ class BookmarkService(CRUDBase[Bookmark]):
                 (Bookmark.original_url.ilike(f"%{search}%"))
                 | (Bookmark.short_code.ilike(f"%{search}%"))
             )
-        query = query.offset(skip).limit(limit)
+        query = (
+            query.order_by(Bookmark.created_at.desc(), Bookmark.id.desc())
+            .offset(skip)
+            .limit(limit)
+        )
         result = await db.execute(query)
         return result.scalars().all()
 

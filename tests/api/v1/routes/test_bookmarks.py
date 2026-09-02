@@ -112,18 +112,34 @@ class TestGetBookmarks:
             "https://fastapi.tiangolo.com",
             "https://github.com",
         ]
+        created_ids = []
         for url in urls:
-            await client_with_auth.post("/bookmarks/", json={"original_url": url})
+            post_resp = await client_with_auth.post(
+                "/bookmarks/", json={"original_url": url}
+            )
+            created_ids.append(post_resp.json()["id"])
 
         # Test limit
         resp_limit = await client_with_auth.get("/bookmarks/?skip=0&limit=2")
         assert resp_limit.status_code == 200
-        assert len(resp_limit.json()) == 2
+        page1 = resp_limit.json()
+        assert len(page1) == 2
 
         # Test skip
         resp_skip = await client_with_auth.get("/bookmarks/?skip=2&limit=2")
         assert resp_skip.status_code == 200
-        assert len(resp_skip.json()) == 1
+        page2 = resp_skip.json()
+        assert len(page2) == 1
+
+        # Assert deterministic ordering and page identity isolation
+        page1_ids = [b["id"] for b in page1]
+        page2_ids = [b["id"] for b in page2]
+        assert set(page1_ids).isdisjoint(set(page2_ids))
+        assert set(page1_ids + page2_ids) == set(created_ids)
+
+        # Assert determinism: repeated fetch returns identical order
+        resp_again = await client_with_auth.get("/bookmarks/?skip=0&limit=2")
+        assert [b["id"] for b in resp_again.json()] == page1_ids
 
         # Test search
         resp_search = await client_with_auth.get("/bookmarks/?search=fastapi")

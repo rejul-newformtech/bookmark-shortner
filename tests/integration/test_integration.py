@@ -116,9 +116,10 @@ class TestMultipleUsersWorkflow:
         list2 = await client.get("/bookmarks/")
         assert len(list2.json()) == 1
 
-        # User 2: Get profile
-        profile1_view = await client.get("/users/profile")
-        assert profile1_view.status_code == 200
+        # User 2: Get profile and verify isolation
+        profile_response = await client.get("/users/profile")
+        assert profile_response.status_code == 200
+        assert profile_response.json()["username"] == test_user_data_2["username"]
 
 
 class TestErrorHandlingWorkflow:

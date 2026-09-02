@@ -65,7 +65,7 @@ class UserService(CRUDBase[User]):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already exists",
             )
-        hashed_password = get_hashed_password(user_create.password)
+        hashed_password = await get_hashed_password(user_create.password)
 
         user = await self.create(
             db,

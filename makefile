@@ -14,6 +14,9 @@ install: ## Install project and development dependencies
 dev: ## Start the development server with auto-reload
 	uv run uvicorn $(APP) --reload
 
+run-prod: ## Start the production server with 4 worker processes
+	uv run uvicorn $(APP) --host 0.0.0.0 --port 8000 --workers 4
+
 run: ## Start the application and database containers
 	docker compose up
 

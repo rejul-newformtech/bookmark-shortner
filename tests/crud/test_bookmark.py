@@ -58,16 +58,16 @@ class TestBookmarkCRUD:
         """Test getting bookmarks with pagination and search filtering."""
         user_id = uuid4()
 
-        await bookmark_service.db_bookmark(
+        b1 = await bookmark_service.db_bookmark(
             db=db_session, user_id=user_id, url="https://python.org", short_code="py123"
         )
-        await bookmark_service.db_bookmark(
+        b2 = await bookmark_service.db_bookmark(
             db=db_session,
             user_id=user_id,
             url="https://fastapi.tiangolo.com",
             short_code="fa456",
         )
-        await bookmark_service.db_bookmark(
+        b3 = await bookmark_service.db_bookmark(
             db=db_session, user_id=user_id, url="https://github.com", short_code="gh789"
         )
 
@@ -82,6 +82,16 @@ class TestBookmarkCRUD:
             db=db_session, user_id=user_id, skip=2, limit=2
         )
         assert len(page2) == 1
+
+        # Assert deterministic ordering and page identity isolation
+        all_created = sorted(
+            [b1, b2, b3], key=lambda b: (b.created_at, b.id), reverse=True
+        )
+        page1_ids = [b.id for b in page1]
+        page2_ids = [b.id for b in page2]
+        assert page1_ids == [b.id for b in all_created[:2]]
+        assert page2_ids == [b.id for b in all_created[2:]]
+        assert set(page1_ids).isdisjoint(set(page2_ids))
 
         # Test search filter
         search_res = await bookmark_service.get_bookmarks(
