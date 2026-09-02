@@ -93,12 +93,32 @@ class TestBookmarkCRUD:
         assert page2_ids == [b.id for b in all_created[2:]]
         assert set(page1_ids).isdisjoint(set(page2_ids))
 
-        # Test search filter
+        # Test search filter with case-insensitive URL
         search_res = await bookmark_service.get_bookmarks(
-            db=db_session, user_id=user_id, search="fastapi"
+            db=db_session, user_id=user_id, search="FASTAPI"
         )
         assert len(search_res) == 1
         assert "fastapi" in search_res[0].original_url
+
+        # Test search filter with mixed-case short_code
+        short_code_res = await bookmark_service.get_bookmarks(
+            db=db_session, user_id=user_id, search="FA456"
+        )
+        assert len(short_code_res) == 1
+        assert short_code_res[0].id == b2.id
+
+        # Test search filter with literal wildcard characters (% and _)
+        b_special = await bookmark_service.db_bookmark(
+            db=db_session,
+            user_id=user_id,
+            url="https://deals.com/100%_sale",
+            short_code="sale_100",
+        )
+        special_res = await bookmark_service.get_bookmarks(
+            db=db_session, user_id=user_id, search="100%"
+        )
+        assert len(special_res) == 1
+        assert special_res[0].id == b_special.id
 
     @pytest.mark.asyncio
     async def test_get_empty_bookmarks_for_user(self, db_session):

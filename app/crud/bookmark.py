@@ -48,9 +48,13 @@ class BookmarkService(CRUDBase[Bookmark]):
         # all bookmarks for a user with optional search and pagination
         query = select(Bookmark).where(Bookmark.user_id == user_id)
         if search:
+            escaped_search = (
+                search.replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
+            )
+            pattern = f"%{escaped_search}%"
             query = query.where(
-                (Bookmark.original_url.ilike(f"%{search}%"))
-                | (Bookmark.short_code.ilike(f"%{search}%"))
+                Bookmark.original_url.ilike(pattern, escape="\\")
+                | Bookmark.short_code.ilike(pattern, escape="\\")
             )
         query = (
             query.order_by(Bookmark.created_at.desc(), Bookmark.id.desc())
