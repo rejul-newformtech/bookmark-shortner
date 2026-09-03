@@ -11,8 +11,10 @@ from app.middleware.ratelimiter import RateLimitMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    yield
-    shutdown_threadpool()
+    try:
+        yield
+    finally:
+        shutdown_threadpool()
 
 
 app = FastAPI(

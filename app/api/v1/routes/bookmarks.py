@@ -24,7 +24,6 @@ async def create_bookmark(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-
     short_code = await create_unique_short_code(db)
     result = await bookmark_service.db_bookmark(
         db=db,

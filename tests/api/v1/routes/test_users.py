@@ -8,7 +8,7 @@ class TestUserProfile:
     """Test user profile endpoints."""
 
     @pytest.mark.asyncio
-    async def test_get_user_profile_by_username(
+    async def test_get_current_user_profile(
         self, client_with_auth: AsyncClient, test_user_data: dict
     ):
         """Test getting current user profile."""
