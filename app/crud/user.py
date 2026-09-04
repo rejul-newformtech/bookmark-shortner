@@ -10,15 +10,13 @@ from app.core.security import create_access_token, get_hashed_password
 from app.crud.base import CRUDBase
 from app.models.bookmarks import Bookmark
 from app.models.users import User
-from app.schemas.user import Token, UserCreate
+from app.schemas.user import Token, UserCreate, UserUpdate
 from app.utils.auth import authenticate_user
 
 logger = get_logger(__name__)
 
 
-class UserService(CRUDBase[User]):
-    model = User
-
+class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     async def get_user_profile_by_username(
         self,
         db: AsyncSession,
@@ -95,4 +93,4 @@ class UserService(CRUDBase[User]):
         return Token(access_token=access_token, token_type="bearer")
 
 
-user_service = UserService()
+user = CRUDUser(User)

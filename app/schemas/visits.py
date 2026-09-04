@@ -8,8 +8,16 @@ class Visit(BaseModel):
     pass
 
 
-class Visited(Visit):
+class VisitCreate(BaseModel):
     bookmark_id: UUID
+
+
+class VisitUpdate(BaseModel):
+    bookmark_id: UUID | None = None
+
+
+class Visited(VisitCreate):
+    pass
 
 
 class VisitResponse(BaseModel):

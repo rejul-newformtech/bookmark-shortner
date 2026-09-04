@@ -1,19 +1,18 @@
 from uuid import UUID
 
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
 from app.core.logger import get_logger
 from app.crud.base import CRUDBase
 from app.models.bookmarks import Bookmark
+from app.schemas.bookmark import BookmarkCreate, BookmarkUpdate
 
 logger = get_logger(__name__)
 
 
-class BookmarkService(CRUDBase[Bookmark]):
-    model = Bookmark
-
+class CRUDBookmark(CRUDBase[Bookmark, BookmarkCreate, BookmarkUpdate]):
     async def db_bookmark(
         self, db: AsyncSession, user_id: UUID, url: str, short_code: str
     ):
@@ -76,4 +75,4 @@ class BookmarkService(CRUDBase[Bookmark]):
         return result.scalars().first()
 
 
-bookmark_service = BookmarkService()
+bookmark = CRUDBookmark(Bookmark)

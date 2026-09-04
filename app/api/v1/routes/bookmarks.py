@@ -4,7 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, s
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
-from app.crud.bookmark import bookmark_service
+from app.crud.bookmark import bookmark
 from app.models.users import User
 from app.schemas.bookmark import BookmarkCreate, BookmarkResponse
 from app.service.analytics import record_visit_background
@@ -20,15 +20,15 @@ router = APIRouter(
 
 @router.post("/", response_model=BookmarkResponse)
 async def create_bookmark(
-    bookmark: BookmarkCreate,
+    bookmark_in: BookmarkCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     short_code = await create_unique_short_code(db)
-    result = await bookmark_service.db_bookmark(
+    result = await bookmark.db_bookmark(
         db=db,
         user_id=current_user.id,
-        url=str(bookmark.original_url),
+        url=str(bookmark_in.original_url),
         short_code=short_code,
     )
     return result
@@ -42,7 +42,7 @@ async def get_bookmarks(
     limit: Annotated[int, Query(ge=1, le=100)] = 10,
     search: Annotated[str | None, Query()] = None,
 ):
-    result = await bookmark_service.get_bookmarks(
+    result = await bookmark.get_bookmarks(
         db=db,
         user_id=current_user.id,
         skip=skip,
@@ -64,7 +64,7 @@ async def get_bookmark_by_short_code(
     It also records a visit to the bookmark in the database and increments
     the visit count.
     """
-    result = await bookmark_service.get_bookmark_by_short_code(
+    result = await bookmark.get_bookmark_by_short_code(
         db=db, short_code=short_code, user_id=current_user.id
     )
     if not result:

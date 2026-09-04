@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import pytest
 
-from app.crud.bookmark import bookmark_service
+from app.crud.bookmark import bookmark as crud_bookmark
 
 
 class TestBookmarkCRUD:
@@ -15,7 +15,7 @@ class TestBookmarkCRUD:
         """Test creating a bookmark."""
         user_id = uuid4()
 
-        bookmark = await bookmark_service.db_bookmark(
+        bookmark = await crud_bookmark.db_bookmark(
             db=db_session,
             user_id=user_id,
             url="https://www.example.com",
@@ -40,7 +40,7 @@ class TestBookmarkCRUD:
         ]
 
         for i, url in enumerate(urls):
-            await bookmark_service.db_bookmark(
+            await crud_bookmark.db_bookmark(
                 db=db_session,
                 user_id=user_id,
                 url=url,
@@ -48,7 +48,7 @@ class TestBookmarkCRUD:
             )
 
         # Get bookmarks
-        bookmarks = await bookmark_service.get_bookmarks(db=db_session, user_id=user_id)
+        bookmarks = await crud_bookmark.get_bookmarks(db=db_session, user_id=user_id)
 
         assert len(bookmarks) == 3
         assert all(b.user_id == user_id for b in bookmarks)
@@ -58,27 +58,27 @@ class TestBookmarkCRUD:
         """Test getting bookmarks with pagination and search filtering."""
         user_id = uuid4()
 
-        b1 = await bookmark_service.db_bookmark(
+        b1 = await crud_bookmark.db_bookmark(
             db=db_session, user_id=user_id, url="https://python.org", short_code="py123"
         )
-        b2 = await bookmark_service.db_bookmark(
+        b2 = await crud_bookmark.db_bookmark(
             db=db_session,
             user_id=user_id,
             url="https://fastapi.tiangolo.com",
             short_code="fa456",
         )
-        b3 = await bookmark_service.db_bookmark(
+        b3 = await crud_bookmark.db_bookmark(
             db=db_session, user_id=user_id, url="https://github.com", short_code="gh789"
         )
 
         # Test limit
-        page1 = await bookmark_service.get_bookmarks(
+        page1 = await crud_bookmark.get_bookmarks(
             db=db_session, user_id=user_id, skip=0, limit=2
         )
         assert len(page1) == 2
 
         # Test skip
-        page2 = await bookmark_service.get_bookmarks(
+        page2 = await crud_bookmark.get_bookmarks(
             db=db_session, user_id=user_id, skip=2, limit=2
         )
         assert len(page2) == 1
@@ -94,27 +94,27 @@ class TestBookmarkCRUD:
         assert set(page1_ids).isdisjoint(set(page2_ids))
 
         # Test search filter with case-insensitive URL
-        search_res = await bookmark_service.get_bookmarks(
+        search_res = await crud_bookmark.get_bookmarks(
             db=db_session, user_id=user_id, search="FASTAPI"
         )
         assert len(search_res) == 1
         assert "fastapi" in search_res[0].original_url
 
         # Test search filter with mixed-case short_code
-        short_code_res = await bookmark_service.get_bookmarks(
+        short_code_res = await crud_bookmark.get_bookmarks(
             db=db_session, user_id=user_id, search="FA456"
         )
         assert len(short_code_res) == 1
         assert short_code_res[0].id == b2.id
 
         # Test search filter with literal wildcard characters (% and _)
-        b_special = await bookmark_service.db_bookmark(
+        b_special = await crud_bookmark.db_bookmark(
             db=db_session,
             user_id=user_id,
             url="https://deals.com/100%_sale",
             short_code="sale_100",
         )
-        special_res = await bookmark_service.get_bookmarks(
+        special_res = await crud_bookmark.get_bookmarks(
             db=db_session, user_id=user_id, search="100%"
         )
         assert len(special_res) == 1
@@ -125,7 +125,7 @@ class TestBookmarkCRUD:
         """Test getting bookmarks for user with no bookmarks."""
         user_id = uuid4()
 
-        bookmarks = await bookmark_service.get_bookmarks(db=db_session, user_id=user_id)
+        bookmarks = await crud_bookmark.get_bookmarks(db=db_session, user_id=user_id)
 
         assert bookmarks == []
 
@@ -134,14 +134,14 @@ class TestBookmarkCRUD:
         """Test getting bookmark by short code."""
         user_id = uuid4()
 
-        created = await bookmark_service.db_bookmark(
+        created = await crud_bookmark.db_bookmark(
             db=db_session,
             user_id=user_id,
             url="https://www.example.com",
             short_code="mycode",
         )
 
-        retrieved = await bookmark_service.get_bookmark_by_short_code(
+        retrieved = await crud_bookmark.get_bookmark_by_short_code(
             db=db_session, short_code="mycode", user_id=user_id
         )
 
@@ -156,7 +156,7 @@ class TestBookmarkCRUD:
         user2_id = uuid4()
 
         # Create bookmark for user 1
-        await bookmark_service.db_bookmark(
+        await crud_bookmark.db_bookmark(
             db=db_session,
             user_id=user1_id,
             url="https://www.example.com",
@@ -164,7 +164,7 @@ class TestBookmarkCRUD:
         )
 
         # Try to get as user 2
-        retrieved = await bookmark_service.get_bookmark_by_short_code(
+        retrieved = await crud_bookmark.get_bookmark_by_short_code(
             db=db_session, short_code="usercode", user_id=user2_id
         )
 
@@ -180,19 +180,19 @@ class TestBookmarkDeletion:
         """Test deleting a bookmark."""
         user_id = uuid4()
 
-        bookmark = await bookmark_service.db_bookmark(
+        bookmark = await crud_bookmark.db_bookmark(
             db=db_session,
             user_id=user_id,
             url="https://www.example.com",
             short_code="todelpete",
         )
 
-        result = await bookmark_service.delete(db=db_session, object_id=bookmark.id)
+        result = await crud_bookmark.delete(db=db_session, object_id=bookmark.id)
 
         assert result is True
 
         # Verify it's deleted
-        remaining = await bookmark_service.get_bookmarks(db=db_session, user_id=user_id)
+        remaining = await crud_bookmark.get_bookmarks(db=db_session, user_id=user_id)
         assert len(remaining) == 0
 
     @pytest.mark.asyncio
@@ -200,6 +200,6 @@ class TestBookmarkDeletion:
         """Test deleting non-existent bookmark returns False."""
         fake_id = uuid4()
 
-        result = await bookmark_service.delete(db=db_session, object_id=fake_id)
+        result = await crud_bookmark.delete(db=db_session, object_id=fake_id)
 
         assert result is False

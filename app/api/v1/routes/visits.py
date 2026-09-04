@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
-from app.crud.visits import visit_service
+from app.crud.visits import visit
 from app.models.users import User
 from app.schemas.visits import Visited, VisitResponse
 
@@ -16,12 +16,12 @@ router = APIRouter(
 
 
 @router.post("/", response_model=VisitResponse)
-async def visit(
+async def create_visit(
     visited: Visited,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> VisitResponse:
-    result = await visit_service.visit(db, visited)
+    result = await visit.visit(db, visited)
     return VisitResponse.model_validate(result)
 
 
@@ -30,7 +30,7 @@ async def get_visits(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[VisitResponse]:
-    result = await visit_service.get_all(db)
+    result = await visit.get_all(db)
     return [VisitResponse.model_validate(item) for item in result]
 
 
@@ -40,7 +40,7 @@ async def get_visit(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> VisitResponse:
-    result = await visit_service.get_by_id(db, visit_id)
+    result = await visit.get_by_id(db, visit_id)
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Visit not found"
@@ -55,7 +55,7 @@ async def update_visit(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> VisitResponse:
-    result = await visit_service.update(db, visit_id, bookmark_id=visited.bookmark_id)
+    result = await visit.update(db, object_id=visit_id, bookmark_id=visited.bookmark_id)
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Visit not found"
@@ -69,7 +69,7 @@ async def delete_visit(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> None:
-    deleted = await visit_service.delete(db, visit_id)
+    deleted = await visit.delete(db, visit_id)
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Visit not found"
