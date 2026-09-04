@@ -12,6 +12,10 @@ class BookmarkCreate(BookmarkBase):
     pass
 
 
+class BookmarkUpdate(BaseModel):
+    original_url: HttpUrl | None = None
+
+
 class BookmarkResponse(BookmarkBase):
     id: UUID
     short_code: str

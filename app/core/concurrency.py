@@ -1,7 +1,7 @@
 import asyncio
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, TypeVar
+from typing import Any
 
 from app.core.config import settings
 from app.core.logger import get_logger
@@ -29,10 +29,7 @@ def get_thread_pool() -> ThreadPoolExecutor:
     return _thread_pool
 
 
-R = TypeVar("R")
-
-
-async def run_in_threadpool(func: Callable[..., R], *args: Any, **kwargs: Any) -> R:
+async def run_in_threadpool[R](func: Callable[..., R], *args: Any, **kwargs: Any) -> R:
     """Run a synchronous blocking or CPU‑bound function in the dedicated thread pool.
 
     The function is dispatched via ``loop.run_in_executor`` using the lazily
