@@ -154,3 +154,13 @@ async def client_with_auth(override_get_db, auth_token):
         headers={"Authorization": f"Bearer {auth_token}"},
     ) as ac:
         yield ac
+
+
+@pytest.fixture
+def sample_urls() -> list[str]:
+    """Provide a list of sample URLs for testing."""
+    return [
+        "https://python.org",
+        "https://fastapi.tiangolo.com",
+        "https://github.com",
+    ]

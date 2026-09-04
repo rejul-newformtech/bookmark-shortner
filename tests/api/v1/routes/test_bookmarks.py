@@ -22,15 +22,11 @@ class TestCreateBookmark:
         assert data["visit_count"] == 0
 
     @pytest.mark.asyncio
-    async def test_create_bookmark_multiple(self, client_with_auth: AsyncClient):
+    async def test_create_bookmark_multiple(
+        self, client_with_auth: AsyncClient, sample_urls: list[str]
+    ):
         """Test creating multiple bookmarks."""
-        urls = [
-            "https://www.google.com",
-            "https://www.github.com",
-            "https://www.stackoverflow.com",
-        ]
-
-        for url in urls:
+        for url in sample_urls:
             response = await client_with_auth.post(
                 "/bookmarks/", json={"original_url": url}
             )
@@ -74,17 +70,12 @@ class TestGetBookmarks:
         assert response.json() == []
 
     @pytest.mark.asyncio
-    async def test_get_all_bookmarks(self, client_with_auth: AsyncClient):
+    async def test_get_all_bookmarks(
+        self, client_with_auth: AsyncClient, sample_urls: list[str]
+    ):
         """Test getting all bookmarks for authenticated user."""
-        # Create bookmarks
-        urls = [
-            "https://www.google.com",
-            "https://www.github.com",
-            "https://www.stackoverflow.com",
-        ]
-
         created_bookmarks = []
-        for url in urls:
+        for url in sample_urls:
             response = await client_with_auth.post(
                 "/bookmarks/", json={"original_url": url}
             )
@@ -94,7 +85,7 @@ class TestGetBookmarks:
         response = await client_with_auth.get("/bookmarks/")
         assert response.status_code == 200
         bookmarks = response.json()
-        assert len(bookmarks) == 3
+        assert len(bookmarks) == len(sample_urls)
 
         # Verify all bookmarks are returned
         for bookmark in bookmarks:
@@ -104,16 +95,11 @@ class TestGetBookmarks:
 
     @pytest.mark.asyncio
     async def test_get_bookmarks_pagination_and_search(
-        self, client_with_auth: AsyncClient
+        self, client_with_auth: AsyncClient, sample_urls: list[str]
     ):
         """Test pagination parameters (skip, limit) and search filter on GET /bookmarks/."""
-        urls = [
-            "https://python.org",
-            "https://fastapi.tiangolo.com",
-            "https://github.com",
-        ]
         created_ids = []
-        for url in urls:
+        for url in sample_urls:
             post_resp = await client_with_auth.post(
                 "/bookmarks/", json={"original_url": url}
             )
