@@ -7,6 +7,7 @@ alembic/versions/**
 .pytest_cache/
 .coverage
 htmlcov/
+graphify-out/
 
 # Python-generated files
 __pycache__/
@@ -18,3 +19,4 @@ wheels/
 
 # Virtual environments
 .venv
+.agents/

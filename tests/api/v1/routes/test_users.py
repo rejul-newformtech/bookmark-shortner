@@ -8,13 +8,11 @@ class TestUserProfile:
     """Test user profile endpoints."""
 
     @pytest.mark.asyncio
-    async def test_get_user_profile_by_username(
+    async def test_get_current_user_profile(
         self, client_with_auth: AsyncClient, test_user_data: dict
     ):
-        """Test getting user profile by username."""
-        response = await client_with_auth.get(
-            f"/users/{test_user_data['username']}/profile"
-        )
+        """Test getting current user profile."""
+        response = await client_with_auth.get("/users/profile")
 
         assert response.status_code == 200
         data = response.json()
@@ -25,14 +23,11 @@ class TestUserProfile:
         assert data["status"] == "active"
 
     @pytest.mark.asyncio
-    async def test_get_user_profile_by_username_nonexistent(
-        self, client_with_auth: AsyncClient
-    ):
-        """Test getting profile of non-existent user."""
-        response = await client_with_auth.get("/users/nonexistentuser/profile")
+    async def test_get_user_profile_unauthenticated(self, client: AsyncClient):
+        """Test getting profile without authentication."""
+        response = await client.get("/users/profile")
 
-        assert response.status_code == 404
-        assert "User not found" in response.json()["detail"]
+        assert response.status_code == 401
 
     @pytest.mark.asyncio
     async def test_get_user_profile_with_bookmarks(
@@ -46,9 +41,7 @@ class TestUserProfile:
             await client_with_auth.post("/bookmarks/", json={"original_url": url})
 
         # Get user profile
-        response = await client_with_auth.get(
-            f"/users/{test_user_data['username']}/profile"
-        )
+        response = await client_with_auth.get("/users/profile")
 
         assert response.status_code == 200
         data = response.json()

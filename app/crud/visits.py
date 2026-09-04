@@ -4,14 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.base import CRUDBase
 from app.models.visits import Visit
-from app.schemas.visits import Visited
+from app.schemas.visits import VisitCreate, Visited, VisitUpdate
 
 
-class VisitService(CRUDBase[Visit]):
-    model = Visit
-
+class CRUDVisit(CRUDBase[Visit, VisitCreate, VisitUpdate]):
     async def visit(self, db: AsyncSession, visited: Visited) -> Visit:
         return await self.create(db, bookmark_id=UUID(str(visited.bookmark_id)))
 
 
-visit_service = VisitService()
+visit = CRUDVisit(Visit)

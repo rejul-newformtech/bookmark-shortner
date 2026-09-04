@@ -2,7 +2,7 @@
 
 APP := app.main:app
 
-.PHONY: help install dev run test lint format typecheck check migrate revision docker-up docker-down docker-logs
+.PHONY: help install dev run-prod run test lint format typecheck check migrate revision docker-up docker-down docker-logs
 
 help: ## Show available commands
 	@echo "Available commands:"
@@ -13,6 +13,9 @@ install: ## Install project and development dependencies
 
 dev: ## Start the development server with auto-reload
 	uv run uvicorn $(APP) --reload
+
+run-prod: ## Start the production server
+	uv run uvicorn $(APP) --host 0.0.0.0 --port 8000 --workers 1
 
 run: ## Start the application and database containers
 	docker compose up
