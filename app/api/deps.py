@@ -6,12 +6,10 @@ from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.logger import get_logger
+from app.core.logger import set_current_user_id
 from app.core.security import oauth2_scheme, verify_access_token
 from app.db.session import get_db
 from app.models.users import User
-
-logger = get_logger(__name__)
 
 
 async def get_current_user(
@@ -35,8 +33,6 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
 
-    if not getattr(request.state, "user_id_logged", False):
-        logger.info("Request initiated for user_id=%s", user.id)
-        request.state.user_id_logged = True
+    set_current_user_id(str(user.id))
 
     return user

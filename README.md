@@ -77,6 +77,49 @@ make docker-down
 
 ---
 
+## 🗄️ Database Schema
+
+The database consists of `user`, `bookmark`, and `visit` tables. Below is the Entity-Relationship (ER) diagram illustrating the data models and their relationships:
+
+![Database ER Diagram](er_diagram.png)
+
+<details>
+<summary><b>View Mermaid ER Diagram</b></summary>
+
+```mermaid
+erDiagram
+    user ||--o{ bookmark : "has"
+    bookmark ||--o{ visit : "has"
+
+    user {
+        uuid id PK
+        string username "varchar(50), Unique, Not Null"
+        string email "varchar(100), Unique, Not Null"
+        string hashed_password "varchar(512), Not Null"
+        user_status status "Enum (active, inactive, suspended), Not Null"
+        timestamptz created_at
+    }
+
+    bookmark {
+        uuid id PK
+        string original_url "varchar(2048), Not Null"
+        string short_code "varchar(10), Unique, Not Null"
+        integer visit_count "Default: 0"
+        timestamptz created_at
+        uuid user_id FK "References user(id)"
+    }
+
+    visit {
+        uuid id PK
+        uuid bookmark_id FK "References bookmark(id), Not Null"
+        timestamptz visited_at
+    }
+```
+
+</details>
+
+---
+
 ## 📌 API Endpoints
 
 ### Authentication (`/auth`)

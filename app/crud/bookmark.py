@@ -74,5 +74,42 @@ class CRUDBookmark(CRUDBase[Bookmark, BookmarkCreate, BookmarkUpdate]):
         )
         return result.scalars().first()
 
+    async def get_by_url_and_user(
+        self, db: AsyncSession, user_id: UUID, url: str
+    ) -> Bookmark | None:
+        return await db.scalar(
+            select(Bookmark).where(
+                Bookmark.original_url == url,
+                Bookmark.user_id == user_id,
+            )
+        )
+
+    async def batch_process_pdf_urls(
+        self, db: AsyncSession, user_id: UUID, urls: list[str]
+    ) -> tuple[list[Bookmark], int, int]:
+        from app.utils.shortner import create_unique_short_code
+
+        bookmarks: list[Bookmark] = []
+        created_count = 0
+        existing_count = 0
+
+        for url in urls:
+            existing = await self.get_by_url_and_user(db=db, user_id=user_id, url=url)
+            if existing:
+                bookmarks.append(existing)
+                existing_count += 1
+            else:
+                short_code = await create_unique_short_code(db)
+                new_bm = await self.create(
+                    db,
+                    original_url=url,
+                    short_code=short_code,
+                    user_id=user_id,
+                )
+                bookmarks.append(new_bm)
+                created_count += 1
+
+        return bookmarks, created_count, existing_count
+
 
 bookmark = CRUDBookmark(Bookmark)

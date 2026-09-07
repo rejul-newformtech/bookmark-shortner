@@ -25,3 +25,11 @@ class BookmarkResponse(BookmarkBase):
 
     class Config:
         from_attributes = True
+
+
+class BookmarkBatchUploadResponse(BaseModel):
+    message: str
+    total_found: int
+    created_count: int
+    existing_count: int
+    bookmarks: list[BookmarkResponse]

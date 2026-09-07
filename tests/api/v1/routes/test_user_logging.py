@@ -5,70 +5,79 @@ import logging
 import pytest
 from httpx import AsyncClient
 
+from app.core.logger import (
+    get_logger,
+    reset_user_context,
+    set_current_user_id,
+)
+
 
 class TestUserLogging:
     """Test user ID logging behavior."""
 
+    def test_logger_shows_user_id_only_once_in_context(self):
+        """Test that get_logger only attaches user_id to the very first log record."""
+        reset_user_context()
+        logger = get_logger("test_user_logger")
+
+        test_uid = "123e4567-e89b-12d3-a456-426614174000"
+        set_current_user_id(test_uid)
+
+        # First log in this context
+        record1 = logger.makeRecord(
+            "test_user_logger", logging.INFO, "test.py", 10, "First message", (), None
+        )
+        logger.filter(record1)
+        assert getattr(record1, "user_id", None) == test_uid
+
+        # Second log in the same context
+        record2 = logger.makeRecord(
+            "test_user_logger", logging.INFO, "test.py", 11, "Second message", (), None
+        )
+        logger.filter(record2)
+        assert getattr(record2, "user_id", None) is None
+
+        # Reset context (simulates next request)
+        reset_user_context()
+        set_current_user_id(test_uid)
+        record3 = logger.makeRecord(
+            "test_user_logger", logging.INFO, "test.py", 12, "Third message", (), None
+        )
+        logger.filter(record3)
+        assert getattr(record3, "user_id", None) == test_uid
+
+        reset_user_context()
+
     @pytest.mark.asyncio
-    async def test_authenticated_request_logs_user_id_once(
+    async def test_authenticated_request_attaches_user_id(
         self, client_with_auth: AsyncClient, caplog: pytest.LogCaptureFixture
     ):
-        """Test that an authenticated request logs the user ID exactly once."""
+        """Test that an authenticated request attaches user_id in the logs."""
         with caplog.at_level(logging.INFO):
             response = await client_with_auth.get("/users/profile")
 
         assert response.status_code == 200
         user_id = response.json()["id"]
 
-        matching_logs = [
+        matching_records = [
             record
             for record in caplog.records
-            if f"Request initiated for user_id={user_id}" in record.message
+            if getattr(record, "user_id", None) == user_id
         ]
-        # Must be logged exactly once for this request
-        assert len(matching_logs) == 1
+        assert len(matching_records) == 1
 
     @pytest.mark.asyncio
-    async def test_subsequent_request_logs_once_for_itself(
-        self, client_with_auth: AsyncClient, caplog: pytest.LogCaptureFixture
-    ):
-        """Test that separate requests each log once."""
-        with caplog.at_level(logging.INFO):
-            caplog.clear()
-            resp1 = await client_with_auth.get("/users/profile")
-            assert resp1.status_code == 200
-            user_id = resp1.json()["id"]
-
-            records_req1 = [
-                r
-                for r in caplog.records
-                if f"Request initiated for user_id={user_id}" in r.message
-            ]
-            assert len(records_req1) == 1
-
-            caplog.clear()
-            resp2 = await client_with_auth.get("/bookmarks/")
-            assert resp2.status_code == 200
-
-            records_req2 = [
-                r
-                for r in caplog.records
-                if f"Request initiated for user_id={user_id}" in r.message
-            ]
-            assert len(records_req2) == 1
-
-    @pytest.mark.asyncio
-    async def test_unauthenticated_request_does_not_log_user_id(
+    async def test_unauthenticated_request_does_not_attach_user_id(
         self, client: AsyncClient, caplog: pytest.LogCaptureFixture
     ):
-        """Test that unauthenticated requests do not log a user ID."""
+        """Test that unauthenticated requests do not attach a user ID."""
         with caplog.at_level(logging.INFO):
             response = await client.get("/users/profile")
 
         assert response.status_code == 401
-        matching_logs = [
+        matching_records = [
             record
             for record in caplog.records
-            if "Request initiated for user_id=" in record.message
+            if getattr(record, "user_id", None) is not None
         ]
-        assert len(matching_logs) == 0
+        assert len(matching_records) == 0

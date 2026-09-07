@@ -1,3 +1,4 @@
+import contextvars
 import json
 import logging
 import sys
@@ -6,6 +7,53 @@ from pathlib import Path
 from typing import Any
 
 from app.core.config import settings
+
+current_user_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "current_user_id", default=None
+)
+user_id_logged: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "user_id_logged", default=False
+)
+
+
+def set_current_user_id(user_id: str | None) -> None:
+    """Set the user ID for the current request context."""
+    current_user_id.set(user_id)
+    user_id_logged.set(False)
+
+
+def reset_user_context() -> None:
+    """Reset user context at start or end of request."""
+    current_user_id.set(None)
+    user_id_logged.set(False)
+
+
+class UserContextFilter(logging.Filter):
+    """Logging filter that attaches user_id to the first log record of a request."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        uid = current_user_id.get()
+        if uid and not user_id_logged.get():
+            record.user_id = uid  # type: ignore[attr-defined]
+            user_id_logged.set(True)
+        else:
+            record.user_id = None  # type: ignore[attr-defined]
+        return True
+
+
+class TextFormatter(logging.Formatter):
+    """Custom text formatter that includes [user_id: <id>] on first log per request."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        uid = getattr(record, "user_id", None)
+        base = super().format(record)
+        if uid:
+            sep = f" - {record.levelname} - "
+            prefix, found, suffix = base.partition(sep)
+            if found:
+                return f"{prefix}{sep}[user_id: {uid}] {suffix}"
+            return f"[user_id: {uid}] {base}"
+        return base
 
 
 class JSONFormatter(logging.Formatter):
@@ -18,6 +66,9 @@ class JSONFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
+        uid = getattr(record, "user_id", None)
+        if uid:
+            log_object["user_id"] = uid
         if record.exc_info:
             log_object["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_object)
@@ -29,12 +80,13 @@ def get_logger(name: str) -> logging.Logger:
         return logger
 
     logger.setLevel(logging.INFO)
+    logger.addFilter(UserContextFilter())
 
     # Ensure log directory exists
     log_dir = Path(settings.LOG_DIR)
     log_dir.mkdir(exist_ok=True)
 
-    text_formatter = logging.Formatter(
+    text_formatter = TextFormatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
