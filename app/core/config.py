@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     DB_PORT: int = 5432
     LOG_FORMAT: str = "text"  # "text", "json", or "both"
     LOG_DIR: str = "logs"
+    THREAD_POOL_WORKERS: int = 4
 
     model_config = SettingsConfigDict(
         env_file=".env",

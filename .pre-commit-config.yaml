@@ -39,3 +39,4 @@ repos:
           - pytest
           - pytest-asyncio
           - httpx
+          - pypdf

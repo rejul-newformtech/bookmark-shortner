@@ -2,7 +2,7 @@
 
 APP := app.main:app
 
-.PHONY: help install dev run test lint format typecheck check migrate revision docker-up docker-down docker-logs
+.PHONY: help install dev run-prod run test test-unit test-integration lint format typecheck check migrate revision docker-up docker-down docker-logs
 
 help: ## Show available commands
 	@echo "Available commands:"
@@ -14,11 +14,20 @@ install: ## Install project and development dependencies
 dev: ## Start the development server with auto-reload
 	uv run uvicorn $(APP) --reload
 
+run-prod: ## Start the production server
+	uv run uvicorn $(APP) --host 0.0.0.0 --port 8000 --workers 1
+
 run: ## Start the application and database containers
 	docker compose up
 
-test: ## Run the test suite
+test: ## Run the full test suite
 	uv run pytest
+
+test-unit: ## Run only unit tests
+	uv run pytest tests/unit
+
+test-integration: ## Run only integration and route tests
+	uv run pytest tests/integration
 
 lint: ## Check the code with Ruff
 	uv run ruff check .

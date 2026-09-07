@@ -12,6 +12,7 @@ dependencies = [
     "psycopg[binary]>=3.2.0",
     "pydantic-settings>=2.15.0",
     "python-jose[cryptography]>=3.5.0",
+    "pypdf>=5.0.0",
     "sqlalchemy>=2.0.52",
     "types-passlib>=1.7.7.20260211",
     "types-python-jose>=3.5.0.20260408",

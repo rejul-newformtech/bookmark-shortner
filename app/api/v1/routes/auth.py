@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.core.logger import get_logger
-from app.crud.user import user_service
+from app.crud.user import user
 from app.schemas.user import Token, UserCreate, UserResponse
 
 logger = get_logger(__name__)
@@ -24,10 +24,12 @@ async def login_form(
 
 
 @router.post("/register")
-async def register_user(user: UserCreate, db: Annotated[AsyncSession, Depends(get_db)]):
+async def register_user(
+    user_in: UserCreate, db: Annotated[AsyncSession, Depends(get_db)]
+):
     """Register a new user."""
-    logger.info("Register attempt for username=%s", user.username)
-    result = await user_service.create_user(db, user)
+    logger.info("Register attempt for username=%s", user_in.username)
+    result = await user.create_user(db, user_in)
     logger.info("User registered successfully: %s", result.username)
     return {
         "message": "User registered successfully",
@@ -43,6 +45,6 @@ async def login_for_access_token(
     """Authenticate a user and return an access token."""
     username = form_data["username"]
     logger.info("Login attempt for username=%s", username)
-    token = await user_service.login_user(db, username, form_data["password"])
+    token = await user.login_user(db, username, form_data["password"])
     logger.info("Successful login for username=%s", username)
     return token

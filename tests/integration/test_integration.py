@@ -30,9 +30,7 @@ class TestCompleteUserWorkflow:
 
         # Step 3: Use token to access protected endpoint
         client.headers = {"Authorization": f"Bearer {token}"}
-        profile_response = await client.get(
-            f"/users/{test_user_data['username']}/profile"
-        )
+        profile_response = await client.get("/users/profile")
         assert profile_response.status_code == 200
         assert profile_response.json()["username"] == test_user_data["username"]
 
@@ -118,9 +116,10 @@ class TestMultipleUsersWorkflow:
         list2 = await client.get("/bookmarks/")
         assert len(list2.json()) == 1
 
-        # User 2: Get User 1's profile
-        profile1_view = await client.get(f"/users/{test_user_data['username']}/profile")
-        assert profile1_view.status_code == 200
+        # User 2: Get profile and verify isolation
+        profile_response = await client.get("/users/profile")
+        assert profile_response.status_code == 200
+        assert profile_response.json()["username"] == test_user_data_2["username"]
 
 
 class TestErrorHandlingWorkflow:
@@ -189,9 +188,7 @@ class TestDataConsistency:
         )
 
         # Get user profile
-        profile_response = await client_with_auth.get(
-            f"/users/{test_user_data['username']}/profile"
-        )
+        profile_response = await client_with_auth.get("/users/profile")
 
         assert profile_response.status_code == 200
         data = profile_response.json()

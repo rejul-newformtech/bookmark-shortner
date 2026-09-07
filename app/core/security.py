@@ -5,6 +5,7 @@ from fastapi.security import HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
+from app.core.concurrency import run_in_threadpool
 from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -16,12 +17,14 @@ def get_secret_key() -> str:
     return settings.SECRET_KEY
 
 
-def get_hashed_password(password: str) -> str:
-    return pwd_context.hash(secret=password)
+async def get_hashed_password(password: str) -> str:
+    return await run_in_threadpool(pwd_context.hash, secret=password)
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(secret=plain_password, hash=hashed_password)
+async def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return await run_in_threadpool(
+        pwd_context.verify, secret=plain_password, hash=hashed_password
+    )
 
 
 def create_access_token(data: dict[str, str], expires_delta: timedelta | None = None):

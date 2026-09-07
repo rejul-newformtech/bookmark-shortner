@@ -22,15 +22,11 @@ class TestCreateBookmark:
         assert data["visit_count"] == 0
 
     @pytest.mark.asyncio
-    async def test_create_bookmark_multiple(self, client_with_auth: AsyncClient):
+    async def test_create_bookmark_multiple(
+        self, client_with_auth: AsyncClient, sample_urls: list[str]
+    ):
         """Test creating multiple bookmarks."""
-        urls = [
-            "https://www.google.com",
-            "https://www.github.com",
-            "https://www.stackoverflow.com",
-        ]
-
-        for url in urls:
+        for url in sample_urls:
             response = await client_with_auth.post(
                 "/bookmarks/", json={"original_url": url}
             )
@@ -74,17 +70,12 @@ class TestGetBookmarks:
         assert response.json() == []
 
     @pytest.mark.asyncio
-    async def test_get_all_bookmarks(self, client_with_auth: AsyncClient):
+    async def test_get_all_bookmarks(
+        self, client_with_auth: AsyncClient, sample_urls: list[str]
+    ):
         """Test getting all bookmarks for authenticated user."""
-        # Create bookmarks
-        urls = [
-            "https://www.google.com",
-            "https://www.github.com",
-            "https://www.stackoverflow.com",
-        ]
-
         created_bookmarks = []
-        for url in urls:
+        for url in sample_urls:
             response = await client_with_auth.post(
                 "/bookmarks/", json={"original_url": url}
             )
@@ -94,13 +85,53 @@ class TestGetBookmarks:
         response = await client_with_auth.get("/bookmarks/")
         assert response.status_code == 200
         bookmarks = response.json()
-        assert len(bookmarks) == 3
+        assert len(bookmarks) == len(sample_urls)
 
         # Verify all bookmarks are returned
         for bookmark in bookmarks:
             assert "id" in bookmark
             assert "original_url" in bookmark
             assert "short_code" in bookmark
+
+    @pytest.mark.asyncio
+    async def test_get_bookmarks_pagination_and_search(
+        self, client_with_auth: AsyncClient, sample_urls: list[str]
+    ):
+        """Test pagination parameters (skip, limit) and search filter on GET /bookmarks/."""
+        created_ids = []
+        for url in sample_urls:
+            post_resp = await client_with_auth.post(
+                "/bookmarks/", json={"original_url": url}
+            )
+            created_ids.append(post_resp.json()["id"])
+
+        # Test limit
+        resp_limit = await client_with_auth.get("/bookmarks/?skip=0&limit=2")
+        assert resp_limit.status_code == 200
+        page1 = resp_limit.json()
+        assert len(page1) == 2
+
+        # Test skip
+        resp_skip = await client_with_auth.get("/bookmarks/?skip=2&limit=2")
+        assert resp_skip.status_code == 200
+        page2 = resp_skip.json()
+        assert len(page2) == 1
+
+        # Assert deterministic ordering and page identity isolation
+        page1_ids = [b["id"] for b in page1]
+        page2_ids = [b["id"] for b in page2]
+        assert set(page1_ids).isdisjoint(set(page2_ids))
+        assert set(page1_ids + page2_ids) == set(created_ids)
+
+        # Assert determinism: repeated fetch returns identical order
+        resp_again = await client_with_auth.get("/bookmarks/?skip=0&limit=2")
+        assert [b["id"] for b in resp_again.json()] == page1_ids
+
+        # Test search
+        resp_search = await client_with_auth.get("/bookmarks/?search=fastapi")
+        assert resp_search.status_code == 200
+        assert len(resp_search.json()) == 1
+        assert "fastapi" in resp_search.json()[0]["original_url"]
 
     @pytest.mark.asyncio
     async def test_get_all_bookmarks_without_auth(self, client: AsyncClient):
@@ -164,3 +195,49 @@ class TestGetBookmarks:
         bookmarks = list_response.json()
         assert len(bookmarks) == 1
         assert bookmarks[0]["visit_count"] == 1
+
+    @pytest.mark.asyncio
+    async def test_get_bookmarks_sortby_filter(self, client_with_auth: AsyncClient):
+        """Test sorting bookmarks by visit_count and original_url."""
+        # 1. Create three bookmarks
+        b1 = (
+            await client_with_auth.post(
+                "/bookmarks/", json={"original_url": "https://bbb.com"}
+            )
+        ).json()
+        b2 = (
+            await client_with_auth.post(
+                "/bookmarks/", json={"original_url": "https://aaa.com"}
+            )
+        ).json()
+        b3 = (
+            await client_with_auth.post(
+                "/bookmarks/", json={"original_url": "https://ccc.com"}
+            )
+        ).json()
+
+        # 2. Visit b2 twice, b1 once
+        await client_with_auth.get(f"/bookmarks/{b2['short_code']}")
+        await client_with_auth.get(f"/bookmarks/{b2['short_code']}")
+        await client_with_auth.get(f"/bookmarks/{b1['short_code']}")
+
+        # 3. Test sortby=visit_count (descending by default)
+        res_visits = await client_with_auth.get(
+            "/bookmarks/?sortby=visit_count&order=desc"
+        )
+        assert res_visits.status_code == 200
+        visits_list = res_visits.json()
+        assert visits_list[0]["id"] == b2["id"]
+        assert visits_list[0]["visit_count"] >= 2
+        assert visits_list[1]["id"] == b1["id"]
+        assert visits_list[2]["id"] == b3["id"]
+
+        # 4. Test sort_by=original_url with order=asc
+        res_alpha = await client_with_auth.get(
+            "/bookmarks/?sort_by=original_url&order=asc"
+        )
+        assert res_alpha.status_code == 200
+        alpha_list = res_alpha.json()
+        assert "aaa.com" in alpha_list[0]["original_url"]
+        assert "bbb.com" in alpha_list[1]["original_url"]
+        assert "ccc.com" in alpha_list[2]["original_url"]

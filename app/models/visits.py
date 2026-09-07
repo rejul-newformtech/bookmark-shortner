@@ -30,4 +30,4 @@ class Visit(Base):
         server_default=func.now(),
     )
 
-    bookmark: Mapped[Bookmark] = relationship(back_populates="visits")
+    bookmark: Mapped[Bookmark] = relationship(back_populates="visits", lazy="selectin")

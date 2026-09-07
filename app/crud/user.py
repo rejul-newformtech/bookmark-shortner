@@ -10,15 +10,13 @@ from app.core.security import create_access_token, get_hashed_password
 from app.crud.base import CRUDBase
 from app.models.bookmarks import Bookmark
 from app.models.users import User
-from app.schemas.user import Token, UserCreate
+from app.schemas.user import Token, UserCreate, UserUpdate
 from app.utils.auth import authenticate_user
 
 logger = get_logger(__name__)
 
 
-class UserService(CRUDBase[User]):
-    model = User
-
+class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     async def get_user_profile_by_username(
         self,
         db: AsyncSession,
@@ -31,16 +29,16 @@ class UserService(CRUDBase[User]):
             .where(User.username == username)
         )
 
-        user = result.unique().scalar_one_or_none()
+        db_user = result.unique().scalar_one_or_none()
 
-        if user is None:
+        if db_user is None:
             logger.warning("User profile not found for username=%s", username)
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found",
             )
 
-        return user
+        return db_user
 
     async def create_user(self, db: AsyncSession, user_create: UserCreate) -> User:
         logger.info("Attempting to create user username=%s", user_create.username)
@@ -65,7 +63,7 @@ class UserService(CRUDBase[User]):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already exists",
             )
-        hashed_password = get_hashed_password(user_create.password)
+        hashed_password = await get_hashed_password(user_create.password)
 
         user = await self.create(
             db,
@@ -95,4 +93,4 @@ class UserService(CRUDBase[User]):
         return Token(access_token=access_token, token_type="bearer")
 
 
-user_service = UserService()
+user = CRUDUser(User)

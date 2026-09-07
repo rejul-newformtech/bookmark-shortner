@@ -10,6 +10,6 @@ async def authenticate_user(db, username: str, password: str):
     user = result.scalars().first()
     if not user:
         return None
-    if not verify_password(password, user.hashed_password):
+    if not await verify_password(password, user.hashed_password):
         return None
     return user

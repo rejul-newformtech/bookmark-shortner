@@ -3,7 +3,7 @@
 import pytest
 from fastapi import HTTPException
 
-from app.crud.user import user_service
+from app.crud.user import user as crud_user
 from app.models.users import UserStatus
 from app.schemas.user import UserCreate
 
@@ -20,7 +20,7 @@ class TestUserCRUD:
             password="ValidPass123!@#",
         )
 
-        user = await user_service.create_user(db_session, user_data)
+        user = await crud_user.create_user(db_session, user_data)
 
         assert user.username == "testuser"
         assert user.email == "test@example.com"
@@ -36,10 +36,10 @@ class TestUserCRUD:
             email="test@example.com",
             password="ValidPass123!@#",
         )
-        created_user = await user_service.create_user(db_session, user_data)
+        created_user = await crud_user.create_user(db_session, user_data)
 
         # Get user
-        retrieved_user = await user_service.get_user_profile_by_username(
+        retrieved_user = await crud_user.get_user_profile_by_username(
             db_session, "testuser"
         )
 
@@ -50,7 +50,7 @@ class TestUserCRUD:
     async def test_get_nonexistent_user(self, db_session):
         """Test getting non-existent user raises error."""
         with pytest.raises(HTTPException):
-            await user_service.get_user_profile_by_username(db_session, "nonexistent")
+            await crud_user.get_user_profile_by_username(db_session, "nonexistent")
 
     @pytest.mark.asyncio
     async def test_duplicate_username_error(self, db_session):
@@ -60,7 +60,7 @@ class TestUserCRUD:
             email="test@example.com",
             password="ValidPass123!@#",
         )
-        await user_service.create_user(db_session, user_data)
+        await crud_user.create_user(db_session, user_data)
 
         duplicate_data = UserCreate(
             username="testuser",
@@ -69,7 +69,7 @@ class TestUserCRUD:
         )
 
         with pytest.raises(HTTPException) as exc_info:
-            await user_service.create_user(db_session, duplicate_data)
+            await crud_user.create_user(db_session, duplicate_data)
         assert "Username already exists" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
@@ -80,7 +80,7 @@ class TestUserCRUD:
             email="test@example.com",
             password="ValidPass123!@#",
         )
-        await user_service.create_user(db_session, user_data)
+        await crud_user.create_user(db_session, user_data)
 
         duplicate_data = UserCreate(
             username="differentuser",
@@ -89,5 +89,5 @@ class TestUserCRUD:
         )
 
         with pytest.raises(HTTPException) as exc_info:
-            await user_service.create_user(db_session, duplicate_data)
+            await crud_user.create_user(db_session, duplicate_data)
         assert "Email already exists" in str(exc_info.value.detail)

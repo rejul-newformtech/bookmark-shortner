@@ -14,55 +14,61 @@ from app.core.security import (
 class TestPasswordHashing:
     """Test password hashing and verification."""
 
-    def test_hash_password(self):
+    @pytest.mark.asyncio
+    async def test_hash_password(self):
         """Test password hashing."""
         password = "TestPassword123!@#"
-        hashed = get_hashed_password(password)
+        hashed = await get_hashed_password(password)
 
         assert hashed != password
         assert len(hashed) > 0
         assert isinstance(hashed, str)
 
-    def test_verify_password_correct(self):
+    @pytest.mark.asyncio
+    async def test_verify_password_correct(self):
         """Test verifying correct password."""
         password = "TestPassword123!@#"
-        hashed = get_hashed_password(password)
+        hashed = await get_hashed_password(password)
 
-        assert verify_password(password, hashed) is True
+        assert await verify_password(password, hashed) is True
 
-    def test_verify_password_incorrect(self):
+    @pytest.mark.asyncio
+    async def test_verify_password_incorrect(self):
         """Test verifying incorrect password."""
         password = "TestPassword123!@#"
         wrong_password = "WrongPassword456!@#"
-        hashed = get_hashed_password(password)
+        hashed = await get_hashed_password(password)
 
-        assert verify_password(wrong_password, hashed) is False
+        assert await verify_password(wrong_password, hashed) is False
 
-    def test_hash_consistency(self):
+    @pytest.mark.asyncio
+    async def test_hash_consistency(self):
         """Test that same password produces different hashes (due to salt)."""
         password = "TestPassword123!@#"
-        hash1 = get_hashed_password(password)
-        hash2 = get_hashed_password(password)
+        hash1 = await get_hashed_password(password)
+        hash2 = await get_hashed_password(password)
 
         # Hashes should be different due to salt
         assert hash1 != hash2
 
         # But both should verify with same password
-        assert verify_password(password, hash1) is True
-        assert verify_password(password, hash2) is True
+        assert await verify_password(password, hash1) is True
+        assert await verify_password(password, hash2) is True
 
-    def test_password_case_sensitive(self):
+    @pytest.mark.asyncio
+    async def test_password_case_sensitive(self):
         """Test that password verification is case-sensitive."""
         password = "TestPassword123!@#"
         wrong_case = "testpassword123!@#"
-        hashed = get_hashed_password(password)
+        hashed = await get_hashed_password(password)
 
-        assert verify_password(wrong_case, hashed) is False
+        assert await verify_password(wrong_case, hashed) is False
 
-    def test_empty_password_hash(self):
+    @pytest.mark.asyncio
+    async def test_empty_password_hash(self):
         """Test hashing empty password."""
         password = ""
-        hashed = get_hashed_password(password)
+        hashed = await get_hashed_password(password)
 
         assert hashed != password
 

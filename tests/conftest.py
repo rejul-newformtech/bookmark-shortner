@@ -19,9 +19,11 @@ DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 @pytest_asyncio.fixture(scope="session")
 def event_loop():
     """Create an instance of the default event loop for the test session."""
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
+    try:
+        loop = asyncio.new_event_loop()
+        yield loop
+    finally:
+        loop.close()
 
 
 @pytest_asyncio.fixture
@@ -152,3 +154,13 @@ async def client_with_auth(override_get_db, auth_token):
         headers={"Authorization": f"Bearer {auth_token}"},
     ) as ac:
         yield ac
+
+
+@pytest.fixture
+def sample_urls() -> list[str]:
+    """Provide a list of sample URLs for testing."""
+    return [
+        "https://python.org",
+        "https://fastapi.tiangolo.com",
+        "https://github.com",
+    ]

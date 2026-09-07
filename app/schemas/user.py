@@ -51,6 +51,13 @@ class UserLogin(BaseModel):
     password: str = Field(min_length=8, max_length=128)
 
 
+class UserUpdate(BaseModel):
+    email: EmailStr | None = None
+    username: str | None = Field(default=None, min_length=3, max_length=50)
+    password: str | None = Field(default=None, min_length=8, max_length=128)
+    status: UserStatus | None = None
+
+
 class UserResponse(UserBase):
     id: UUID
     status: UserStatus
