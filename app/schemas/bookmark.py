@@ -1,7 +1,20 @@
 from datetime import datetime
+from enum import Enum
 from uuid import UUID
 
 from pydantic import BaseModel, HttpUrl
+
+
+class BookmarkSortBy(str, Enum):
+    CREATED_AT = "created_at"
+    VISIT_COUNT = "visit_count"
+    ORIGINAL_URL = "original_url"
+    SHORT_CODE = "short_code"
+
+
+class SortOrder(str, Enum):
+    ASC = "asc"
+    DESC = "desc"
 
 
 class BookmarkBase(BaseModel):

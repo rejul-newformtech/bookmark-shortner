@@ -19,6 +19,8 @@ from app.schemas.bookmark import (
     BookmarkBatchUploadResponse,
     BookmarkCreate,
     BookmarkResponse,
+    BookmarkSortBy,
+    SortOrder,
 )
 from app.service.analytics import record_visit_background
 from app.service.pdf_extractor import extract_urls_from_pdf
@@ -119,13 +121,35 @@ async def get_bookmarks(
     skip: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 10,
     search: Annotated[str | None, Query()] = None,
+    sort_by: Annotated[
+        BookmarkSortBy | None,
+        Query(
+            description="Field to sort by: created_at, visit_count, original_url, short_code",
+        ),
+    ] = None,
+    sortby: Annotated[
+        BookmarkSortBy | None,
+        Query(
+            description="Alias for sort_by",
+            include_in_schema=False,
+        ),
+    ] = None,
+    order: Annotated[
+        SortOrder,
+        Query(
+            description="Sort direction: asc or desc",
+        ),
+    ] = SortOrder.DESC,
 ):
+    chosen_sort = sortby or sort_by or BookmarkSortBy.CREATED_AT
     result = await bookmark.get_bookmarks(
         db=db,
         user_id=current_user.id,
         skip=skip,
         limit=limit,
         search=search,
+        sort_by=chosen_sort.value,
+        order=order.value,
     )
     return result
 
