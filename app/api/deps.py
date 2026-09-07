@@ -1,17 +1,19 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials
 from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logger import set_current_user_id
 from app.core.security import oauth2_scheme, verify_access_token
 from app.db.session import get_db
 from app.models.users import User
 
 
 async def get_current_user(
+    request: Request,
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
@@ -30,4 +32,7 @@ async def get_current_user(
     user = result.scalars().first()
     if user is None:
         raise credentials_exception
+
+    set_current_user_id(str(user.id))
+
     return user

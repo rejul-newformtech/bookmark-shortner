@@ -2,7 +2,7 @@
 
 APP := app.main:app
 
-.PHONY: help install dev run-prod run test lint format typecheck check migrate revision docker-up docker-down docker-logs
+.PHONY: help install dev run-prod run test test-unit test-integration lint format typecheck check migrate revision docker-up docker-down docker-logs
 
 help: ## Show available commands
 	@echo "Available commands:"
@@ -20,8 +20,14 @@ run-prod: ## Start the production server
 run: ## Start the application and database containers
 	docker compose up
 
-test: ## Run the test suite
+test: ## Run the full test suite
 	uv run pytest
+
+test-unit: ## Run only unit tests
+	uv run pytest tests/unit
+
+test-integration: ## Run only integration and route tests
+	uv run pytest tests/integration
 
 lint: ## Check the code with Ruff
 	uv run ruff check .

@@ -195,3 +195,49 @@ class TestGetBookmarks:
         bookmarks = list_response.json()
         assert len(bookmarks) == 1
         assert bookmarks[0]["visit_count"] == 1
+
+    @pytest.mark.asyncio
+    async def test_get_bookmarks_sortby_filter(self, client_with_auth: AsyncClient):
+        """Test sorting bookmarks by visit_count and original_url."""
+        # 1. Create three bookmarks
+        b1 = (
+            await client_with_auth.post(
+                "/bookmarks/", json={"original_url": "https://bbb.com"}
+            )
+        ).json()
+        b2 = (
+            await client_with_auth.post(
+                "/bookmarks/", json={"original_url": "https://aaa.com"}
+            )
+        ).json()
+        b3 = (
+            await client_with_auth.post(
+                "/bookmarks/", json={"original_url": "https://ccc.com"}
+            )
+        ).json()
+
+        # 2. Visit b2 twice, b1 once
+        await client_with_auth.get(f"/bookmarks/{b2['short_code']}")
+        await client_with_auth.get(f"/bookmarks/{b2['short_code']}")
+        await client_with_auth.get(f"/bookmarks/{b1['short_code']}")
+
+        # 3. Test sortby=visit_count (descending by default)
+        res_visits = await client_with_auth.get(
+            "/bookmarks/?sortby=visit_count&order=desc"
+        )
+        assert res_visits.status_code == 200
+        visits_list = res_visits.json()
+        assert visits_list[0]["id"] == b2["id"]
+        assert visits_list[0]["visit_count"] >= 2
+        assert visits_list[1]["id"] == b1["id"]
+        assert visits_list[2]["id"] == b3["id"]
+
+        # 4. Test sort_by=original_url with order=asc
+        res_alpha = await client_with_auth.get(
+            "/bookmarks/?sort_by=original_url&order=asc"
+        )
+        assert res_alpha.status_code == 200
+        alpha_list = res_alpha.json()
+        assert "aaa.com" in alpha_list[0]["original_url"]
+        assert "bbb.com" in alpha_list[1]["original_url"]
+        assert "ccc.com" in alpha_list[2]["original_url"]

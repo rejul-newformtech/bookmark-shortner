@@ -203,3 +203,36 @@ class TestBookmarkDeletion:
         result = await crud_bookmark.delete(db=db_session, object_id=fake_id)
 
         assert result is False
+
+    @pytest.mark.asyncio
+    async def test_get_bookmarks_sorting(self, db_session):
+        """Test get_bookmarks sorting by visit_count and original_url."""
+        user_id = uuid4()
+
+        b1 = await crud_bookmark.db_bookmark(
+            db=db_session, user_id=user_id, url="https://zebra.org", short_code="z1"
+        )
+        b2 = await crud_bookmark.db_bookmark(
+            db=db_session, user_id=user_id, url="https://apple.org", short_code="a1"
+        )
+        b3 = await crud_bookmark.db_bookmark(
+            db=db_session, user_id=user_id, url="https://mango.org", short_code="m1"
+        )
+
+        # Set visit counts directly
+        b1.visit_count = 10
+        b2.visit_count = 50
+        b3.visit_count = 5
+        await db_session.commit()
+
+        # Sort by visit_count descending
+        by_visits = await crud_bookmark.get_bookmarks(
+            db=db_session, user_id=user_id, sort_by="visit_count", order="desc"
+        )
+        assert [b.id for b in by_visits] == [b2.id, b1.id, b3.id]
+
+        # Sort by original_url ascending
+        by_url = await crud_bookmark.get_bookmarks(
+            db=db_session, user_id=user_id, sort_by="original_url", order="asc"
+        )
+        assert [b.id for b in by_url] == [b2.id, b3.id, b1.id]
