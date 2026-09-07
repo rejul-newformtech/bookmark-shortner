@@ -60,8 +60,11 @@ class CRUDBookmark(CRUDBase[Bookmark, BookmarkCreate, BookmarkUpdate]):
 
         sort_column_map = {
             "created_at": Bookmark.created_at,
+            "date": Bookmark.created_at,
             "visit_count": Bookmark.visit_count,
+            "visits": Bookmark.visit_count,
             "original_url": Bookmark.original_url,
+            "url": Bookmark.original_url,
             "short_code": Bookmark.short_code,
         }
         sort_column = sort_column_map.get(sort_by, Bookmark.created_at)

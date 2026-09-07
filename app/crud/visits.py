@@ -14,8 +14,8 @@ from app.schemas.visits import VisitCreate, Visited, VisitUpdate
 class CRUDVisit(CRUDBase[Visit, VisitCreate, VisitUpdate]):
     async def visit(self, db: AsyncSession, visited: Visited) -> Visit:
         created = await self.create(db, bookmark_id=UUID(str(visited.bookmark_id)))
-        loaded = await self.get_by_id(db, created.id)
-        return loaded if loaded is not None else created
+        await db.refresh(created, ["bookmark"])
+        return created
 
     async def get_all(self, db: AsyncSession) -> list[Visit]:
         result = await db.execute(

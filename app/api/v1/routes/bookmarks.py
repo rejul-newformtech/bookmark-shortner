@@ -120,7 +120,15 @@ async def get_bookmarks(
     current_user: Annotated[User, Depends(get_current_user)],
     skip: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 10,
-    search: Annotated[str | None, Query()] = None,
+    search: Annotated[
+        str | None, Query(description="Search bookmarks by URL or short code")
+    ] = None,
+    sort: Annotated[
+        str | None,
+        Query(
+            description="Sort field (created_at, visit_count, original_url, short_code). Prefix with '-' for desc, e.g. -visit_count",
+        ),
+    ] = None,
     sort_by: Annotated[
         BookmarkSortBy | None,
         Query(
@@ -128,28 +136,49 @@ async def get_bookmarks(
         ),
     ] = None,
     sortby: Annotated[
-        BookmarkSortBy | None,
+        str | None,
         Query(
-            description="Alias for sort_by",
-            include_in_schema=False,
+            description="Alias for sort",
         ),
     ] = None,
     order: Annotated[
         SortOrder,
         Query(
-            description="Sort direction: asc or desc",
+            description="Sort direction: asc or desc (default: desc)",
         ),
     ] = SortOrder.DESC,
 ):
-    chosen_sort = sortby or sort_by or BookmarkSortBy.CREATED_AT
+    # Parse sort field and direction flexibly
+    raw_sort = sort or sortby or (sort_by.value if sort_by else None) or "created_at"
+    raw_sort = raw_sort.strip().lower()
+
+    chosen_order = order.value
+    if raw_sort.startswith("-"):
+        chosen_order = "desc"
+        raw_sort = raw_sort[1:]
+    elif raw_sort.startswith("+"):
+        chosen_order = "asc"
+        raw_sort = raw_sort[1:]
+
+    valid_fields = {
+        "created_at": "created_at",
+        "date": "created_at",
+        "visit_count": "visit_count",
+        "visits": "visit_count",
+        "original_url": "original_url",
+        "url": "original_url",
+        "short_code": "short_code",
+    }
+    chosen_sort_field = valid_fields.get(raw_sort, "created_at")
+
     result = await bookmark.get_bookmarks(
         db=db,
         user_id=current_user.id,
         skip=skip,
         limit=limit,
         search=search,
-        sort_by=chosen_sort.value,
-        order=order.value,
+        sort_by=chosen_sort_field,
+        order=chosen_order,
     )
     return result
 
