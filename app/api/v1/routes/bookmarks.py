@@ -123,24 +123,12 @@ async def get_bookmarks(
     search: Annotated[
         str | None, Query(description="Search bookmarks by URL or short code")
     ] = None,
-    sort: Annotated[
-        str | None,
-        Query(
-            description="Sort field (created_at, visit_count, original_url, short_code). Prefix with '-' for desc, e.g. -visit_count",
-        ),
-    ] = None,
     sort_by: Annotated[
-        BookmarkSortBy | None,
+        BookmarkSortBy,
         Query(
             description="Field to sort by: created_at, visit_count, original_url, short_code",
         ),
-    ] = None,
-    sortby: Annotated[
-        str | None,
-        Query(
-            description="Alias for sort",
-        ),
-    ] = None,
+    ] = BookmarkSortBy.CREATED_AT,
     order: Annotated[
         SortOrder,
         Query(
@@ -148,37 +136,14 @@ async def get_bookmarks(
         ),
     ] = SortOrder.DESC,
 ):
-    # Parse sort field and direction flexibly
-    raw_sort = sort or sortby or (sort_by.value if sort_by else None) or "created_at"
-    raw_sort = raw_sort.strip().lower()
-
-    chosen_order = order.value
-    if raw_sort.startswith("-"):
-        chosen_order = "desc"
-        raw_sort = raw_sort[1:]
-    elif raw_sort.startswith("+"):
-        chosen_order = "asc"
-        raw_sort = raw_sort[1:]
-
-    valid_fields = {
-        "created_at": "created_at",
-        "date": "created_at",
-        "visit_count": "visit_count",
-        "visits": "visit_count",
-        "original_url": "original_url",
-        "url": "original_url",
-        "short_code": "short_code",
-    }
-    chosen_sort_field = valid_fields.get(raw_sort, "created_at")
-
     result = await bookmark.get_bookmarks(
         db=db,
         user_id=current_user.id,
         skip=skip,
         limit=limit,
         search=search,
-        sort_by=chosen_sort_field,
-        order=chosen_order,
+        sort_by=sort_by.value,
+        order=order.value,
     )
     return result
 
