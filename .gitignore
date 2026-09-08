@@ -2,13 +2,12 @@
 
 uv.lock
 .env
-alembic/versions/**
 *.log
 .pytest_cache/
 .coverage
 htmlcov/
 graphify-out/
-
+rules/
 # Python-generated files
 __pycache__/
 *.py[oc]

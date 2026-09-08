@@ -104,25 +104,53 @@ class CRUDBookmark(CRUDBase[Bookmark, BookmarkCreate, BookmarkUpdate]):
     ) -> tuple[list[Bookmark], int, int]:
         from app.utils.shortner import create_unique_short_code
 
+        if not urls:
+            return [], 0, 0
+
+        # Bulk fetch all existing bookmarks for this user in one query
+        result = await db.execute(
+            select(Bookmark).where(
+                Bookmark.user_id == user_id,
+                Bookmark.original_url.in_(urls),
+            )
+        )
+        existing_map: dict[str, Bookmark] = {
+            str(b.original_url): b for b in result.scalars().all()
+        }
+
         bookmarks: list[Bookmark] = []
+        new_bookmarks: list[Bookmark] = []
         created_count = 0
         existing_count = 0
+        allocated_short_codes: set[str] = set()
 
         for url in urls:
-            existing = await self.get_by_url_and_user(db=db, user_id=user_id, url=url)
-            if existing:
-                bookmarks.append(existing)
+            if url in existing_map:
+                bookmarks.append(existing_map[url])
                 existing_count += 1
             else:
-                short_code = await create_unique_short_code(db)
-                new_bm = await self.create(
-                    db,
+                while True:
+                    short_code = await create_unique_short_code(db)
+                    if short_code not in allocated_short_codes:
+                        allocated_short_codes.add(short_code)
+                        break
+
+                new_bm = Bookmark(
                     original_url=url,
                     short_code=short_code,
                     user_id=user_id,
                 )
+                existing_map[url] = new_bm
+                new_bookmarks.append(new_bm)
                 bookmarks.append(new_bm)
                 created_count += 1
+
+        # Stage and persist all new bookmarks in a single atomic transaction
+        if new_bookmarks:
+            db.add_all(new_bookmarks)
+            await db.commit()
+            for b in new_bookmarks:
+                await db.refresh(b)
 
         return bookmarks, created_count, existing_count
 

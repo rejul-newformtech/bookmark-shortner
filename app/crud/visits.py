@@ -17,20 +17,32 @@ class CRUDVisit(CRUDBase[Visit, VisitCreate, VisitUpdate]):
         await db.refresh(created, ["bookmark"])
         return created
 
-    async def get_all(self, db: AsyncSession) -> list[Visit]:
-        result = await db.execute(
+    async def get_all(
+        self, db: AsyncSession, user_id: UUID | None = None
+    ) -> list[Visit]:
+        query = (
             select(Visit)
+            .join(Visit.bookmark)
             .options(selectinload(Visit.bookmark))
             .order_by(Visit.visited_at.desc())
         )
+        if user_id is not None:
+            query = query.where(Bookmark.user_id == user_id)
+        result = await db.execute(query)
         return list(result.scalars().all())
 
-    async def get_by_id(self, db: AsyncSession, object_id: Any) -> Visit | None:
-        result = await db.execute(
+    async def get_by_id(
+        self, db: AsyncSession, object_id: Any, user_id: UUID | None = None
+    ) -> Visit | None:
+        query = (
             select(Visit)
+            .join(Visit.bookmark)
             .options(selectinload(Visit.bookmark))
             .where(Visit.id == object_id)
         )
+        if user_id is not None:
+            query = query.where(Bookmark.user_id == user_id)
+        result = await db.execute(query)
         return result.scalar_one_or_none()
 
     async def get_by_bookmark_id(

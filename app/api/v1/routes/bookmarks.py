@@ -13,6 +13,7 @@ from fastapi import (
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
+from app.core.config import settings
 from app.crud.bookmark import bookmark
 from app.models.users import User
 from app.schemas.bookmark import (
@@ -52,7 +53,21 @@ async def upload_bookmarks_pdf(
             detail="Uploaded file must be a PDF",
         )
 
-    content = await file.read()
+    # Read safely in chunks up to MAX_UPLOAD_SIZE_BYTES
+    chunks: list[bytes] = []
+    total_bytes = 0
+    chunk_size = 1024 * 1024  # 1 MB chunk
+
+    while chunk := await file.read(chunk_size):
+        total_bytes += len(chunk)
+        if total_bytes > settings.MAX_UPLOAD_SIZE_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"Uploaded file exceeds maximum allowed size of {settings.MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)} MB",
+            )
+        chunks.append(chunk)
+
+    content = b"".join(chunks)
     if not content:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
