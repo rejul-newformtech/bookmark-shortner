@@ -6,6 +6,7 @@ from pypdf import PdfReader
 from pypdf.errors import PyPdfError
 
 from app.core.concurrency import run_in_threadpool
+from app.core.config import settings
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -38,13 +39,15 @@ def extract_urls_from_pdf_sync(pdf_bytes: bytes) -> list[str]:
 
     try:
         reader = PdfReader(io.BytesIO(pdf_bytes))
+        # Evaluate pages inside try-except to catch malformed page-tree errors
+        pages = list(reader.pages[: settings.MAX_PDF_PAGES])
     except Exception as exc:
-        logger.warning(f"Failed to parse PDF bytes: {exc}")
+        logger.warning(f"Failed to parse PDF bytes or page tree: {exc}")
         raise ValueError(f"Corrupted or unreadable PDF: {exc}") from exc
 
     raw_urls: list[str] = []
 
-    for page_idx, page in enumerate(reader.pages):
+    for page_idx, page in enumerate(pages):
         # 1. Extract plain text URLs
         try:
             text = page.extract_text() or ""
@@ -102,7 +105,8 @@ def extract_urls_from_pdf_sync(pdf_bytes: bytes) -> list[str]:
             seen.add(u)
             unique_urls.append(u)
 
-    return unique_urls
+    # Cap URLs before database processing
+    return unique_urls[: settings.MAX_PDF_URLS]
 
 
 async def extract_urls_from_pdf(pdf_bytes: bytes) -> list[str]:

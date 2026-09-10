@@ -13,6 +13,7 @@ from fastapi import (
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
+from app.core.config import settings
 from app.crud.bookmark import bookmark
 from app.models.users import User
 from app.schemas.bookmark import (
@@ -52,7 +53,21 @@ async def upload_bookmarks_pdf(
             detail="Uploaded file must be a PDF",
         )
 
-    content = await file.read()
+    # Read safely in chunks up to MAX_UPLOAD_SIZE_BYTES
+    chunks: list[bytes] = []
+    total_bytes = 0
+    chunk_size = 1024 * 1024  # 1 MB chunk
+
+    while chunk := await file.read(chunk_size):
+        total_bytes += len(chunk)
+        if total_bytes > settings.MAX_UPLOAD_SIZE_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"Uploaded file exceeds maximum allowed size of {settings.MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)} MB",
+            )
+        chunks.append(chunk)
+
+    content = b"".join(chunks)
     if not content:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -120,35 +135,29 @@ async def get_bookmarks(
     current_user: Annotated[User, Depends(get_current_user)],
     skip: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 10,
-    search: Annotated[str | None, Query()] = None,
+    search: Annotated[
+        str | None, Query(description="Search bookmarks by URL or short code")
+    ] = None,
     sort_by: Annotated[
-        BookmarkSortBy | None,
+        BookmarkSortBy,
         Query(
             description="Field to sort by: created_at, visit_count, original_url, short_code",
         ),
-    ] = None,
-    sortby: Annotated[
-        BookmarkSortBy | None,
-        Query(
-            description="Alias for sort_by",
-            include_in_schema=False,
-        ),
-    ] = None,
+    ] = BookmarkSortBy.CREATED_AT,
     order: Annotated[
         SortOrder,
         Query(
-            description="Sort direction: asc or desc",
+            description="Sort direction: asc or desc (default: desc)",
         ),
     ] = SortOrder.DESC,
 ):
-    chosen_sort = sortby or sort_by or BookmarkSortBy.CREATED_AT
     result = await bookmark.get_bookmarks(
         db=db,
         user_id=current_user.id,
         skip=skip,
         limit=limit,
         search=search,
-        sort_by=chosen_sort.value,
+        sort_by=sort_by.value,
         order=order.value,
     )
     return result

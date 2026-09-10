@@ -194,3 +194,19 @@ class TestUploadPdfBookmarks:
             response = await client_with_auth.post("/bookmarks/upload-pdf", files=files)
             assert response.status_code == 200
             assert spy_pool.call_count >= 1
+
+    @pytest.mark.asyncio
+    async def test_upload_pdf_exceeds_max_size(
+        self,
+        client_with_auth: AsyncClient,
+        sample_pdf_bytes: bytes,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
+        """Reject files that exceed MAX_UPLOAD_SIZE_BYTES with 413."""
+        from app.core.config import settings
+
+        monkeypatch.setattr(settings, "MAX_UPLOAD_SIZE_BYTES", 50)
+        files = {"file": ("sample_urls.pdf", sample_pdf_bytes, "application/pdf")}
+        response = await client_with_auth.post("/bookmarks/upload-pdf", files=files)
+        assert response.status_code == 413
+        assert "exceeds maximum allowed size" in response.json()["detail"]

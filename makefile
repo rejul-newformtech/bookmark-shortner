@@ -2,7 +2,7 @@
 
 APP := app.main:app
 
-.PHONY: help install dev run-prod run test test-unit test-integration lint format typecheck check migrate revision docker-up docker-down docker-logs
+.PHONY: help install dev run-prod run test test-unit test-integration lint format typecheck check migrate revision seed seed-reset docker-up docker-down docker-logs
 
 help: ## Show available commands
 	@echo "Available commands:"
@@ -46,6 +46,13 @@ migrate: ## Apply all pending database migrations
 
 revision: ## Create a migration; use msg="describe the change"
 	uv run alembic revision --autogenerate -m "$(msg)"
+
+seed: ## Seed the database using Alembic [seeders] configuration
+	uv run alembic --name seeders upgrade head
+
+seed-reset: ## Reset and reseed the database using Alembic seeders
+	uv run alembic --name seeders downgrade base
+	uv run alembic --name seeders upgrade head
 
 docker-up: ## Start the application and database containers
 	docker compose up -d

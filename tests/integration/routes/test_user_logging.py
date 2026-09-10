@@ -10,6 +10,7 @@ from app.core.logger import (
     reset_user_context,
     set_current_user_id,
 )
+from app.crud.user import logger as user_crud_logger
 
 
 class TestUserLogging:
@@ -53,8 +54,12 @@ class TestUserLogging:
         self, client_with_auth: AsyncClient, caplog: pytest.LogCaptureFixture
     ):
         """Test that an authenticated request attaches user_id in the logs."""
-        with caplog.at_level(logging.INFO):
-            response = await client_with_auth.get("/users/profile")
+        user_crud_logger.addHandler(caplog.handler)
+        try:
+            with caplog.at_level(logging.INFO):
+                response = await client_with_auth.get("/users/profile")
+        finally:
+            user_crud_logger.removeHandler(caplog.handler)
 
         assert response.status_code == 200
         user_id = response.json()["id"]
@@ -71,8 +76,12 @@ class TestUserLogging:
         self, client: AsyncClient, caplog: pytest.LogCaptureFixture
     ):
         """Test that unauthenticated requests do not attach a user ID."""
-        with caplog.at_level(logging.INFO):
-            response = await client.get("/users/profile")
+        user_crud_logger.addHandler(caplog.handler)
+        try:
+            with caplog.at_level(logging.INFO):
+                response = await client.get("/users/profile")
+        finally:
+            user_crud_logger.removeHandler(caplog.handler)
 
         assert response.status_code == 401
         matching_records = [

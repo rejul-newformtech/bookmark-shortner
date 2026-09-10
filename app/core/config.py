@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     LOG_FORMAT: str = "text"  # "text", "json", or "both"
     LOG_DIR: str = "logs"
     THREAD_POOL_WORKERS: int = 4
+    MAX_UPLOAD_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB limit
+    MAX_PDF_PAGES: int = 100
+    MAX_PDF_URLS: int = 200
 
     model_config = SettingsConfigDict(
         env_file=".env",

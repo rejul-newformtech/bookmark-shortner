@@ -26,6 +26,14 @@ async def create_visit(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> VisitResponse:
+    bm = await visit.get_site_by_bookmark_id(
+        db, bookmark_id=visited.bookmark_id, user_id=current_user.id
+    )
+    if bm is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bookmark not found",
+        )
     result = await visit.visit(db, visited)
     return VisitResponse.model_validate(result)
 
@@ -48,7 +56,7 @@ async def get_visits(
         result = await visit.get_by_bookmark_id(db, bookmark_id=bookmark_id)
         return [VisitResponse.model_validate(item) for item in result]
 
-    result = await visit.get_all(db)
+    result = await visit.get_all(db, user_id=current_user.id)
     return [VisitResponse.model_validate(item) for item in result]
 
 
@@ -86,7 +94,7 @@ async def get_visit(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> VisitResponse:
-    result = await visit.get_by_id(db, visit_id)
+    result = await visit.get_by_id(db, visit_id, user_id=current_user.id)
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Visit not found"
@@ -101,6 +109,19 @@ async def update_visit(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> VisitResponse:
+    existing = await visit.get_by_id(db, visit_id, user_id=current_user.id)
+    if existing is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Visit not found"
+        )
+    if visited.bookmark_id is not None:
+        bm = await visit.get_site_by_bookmark_id(
+            db, bookmark_id=visited.bookmark_id, user_id=current_user.id
+        )
+        if bm is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Bookmark not found"
+            )
     result = await visit.update(db, object_id=visit_id, bookmark_id=visited.bookmark_id)
     if result is None:
         raise HTTPException(
@@ -115,6 +136,11 @@ async def delete_visit(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> None:
+    existing = await visit.get_by_id(db, visit_id, user_id=current_user.id)
+    if existing is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Visit not found"
+        )
     deleted = await visit.delete(db, visit_id)
     if not deleted:
         raise HTTPException(

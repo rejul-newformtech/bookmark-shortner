@@ -221,9 +221,20 @@ class TestGetBookmarks:
         await client_with_auth.get(f"/bookmarks/{b2['short_code']}")
         await client_with_auth.get(f"/bookmarks/{b1['short_code']}")
 
-        # 3. Test sortby=visit_count (descending by default)
+        # Clear rate limiter window to allow sort assertion requests
+        from app.main import app
+        from app.middleware.ratelimiter import RateLimitMiddleware
+
+        stack = getattr(app, "middleware_stack", None)
+        while stack is not None:
+            if isinstance(stack, RateLimitMiddleware):
+                stack.requests.clear()
+                break
+            stack = getattr(stack, "app", None)
+
+        # 3. Test sort_by=visit_count (descending by default)
         res_visits = await client_with_auth.get(
-            "/bookmarks/?sortby=visit_count&order=desc"
+            "/bookmarks/?sort_by=visit_count&order=desc"
         )
         assert res_visits.status_code == 200
         visits_list = res_visits.json()
@@ -241,3 +252,9 @@ class TestGetBookmarks:
         assert "aaa.com" in alpha_list[0]["original_url"]
         assert "bbb.com" in alpha_list[1]["original_url"]
         assert "ccc.com" in alpha_list[2]["original_url"]
+
+        # 5. Test sort_by=short_code with order=asc
+        res_code = await client_with_auth.get(
+            "/bookmarks/?sort_by=short_code&order=asc"
+        )
+        assert res_code.status_code == 200

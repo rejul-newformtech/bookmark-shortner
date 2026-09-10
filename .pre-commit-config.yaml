@@ -40,3 +40,4 @@ repos:
           - pytest-asyncio
           - httpx
           - pypdf
+          - alembic
